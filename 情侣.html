@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>心动时刻·专属我们</title>
+    <style>
+        /* 基础重置与微信优化 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        body, html {
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            touch-action: manipulation;
+            background-color: #000;
+            position: relative;
+        }
+        
+        /* 加载界面 */
+        #loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
+        
+        .loading-heart {
+            font-size: 20vw;
+            color: #FF3B6D;
+            position: relative;
+        }
+        
+        .pulse-dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #FF3B6D;
+            border-radius: 50%;
+            opacity: 0.8;
+            transform: translate(-50%, -50%);
+        }
+        
+        .loading-text {
+            color: #FFF;
+            margin-top: 40px;
+            font-size: 5vw;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+        
+        .progress-bar {
+            width: 70%;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            margin-top: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #FF3B6D, #FF9BFF);
+            transition: width 0.3s;
+        }
+        
+        /* 主页面容器 */
+        #app {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            overflow: hidden;
+        }
+        
+        /* 粒子背景 */
+        .particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        /* 心动时刻模块 */
+        #heart-sync {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 10vh;
+        }
+        
+        .sync-pulse-container {
+            position: relative;
+            width: 80vw;
+            height: 80vw;
+            max-width: 400px;
+            max-height: 400px;
+            margin-top: 5vh;
+        }
+        
+        #heart-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            overflow: hidden;
+        }
+        
+        .heart-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 15vw;
+            color: #FF3B6D;
+            z-index: 2;
+        }
+        
+        /* 导航栏 */
+        .nav-bar {
+            position: fixed;
+            bottom: 20px;
+            left: 0;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .nav-btn {
+            width: 15vw;
+            height: 15vw;
+            max-width: 70px;
+            max-height: 70px;
+            margin: 0 3vw;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 6vw;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.2);
+            color: #FF3B6D;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 记忆密码锁模块 */
+        #memory-lock {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+        }
+        
+        .lock-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 10vh;
+        }
+        
+        .lock-cover {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 3;
+        }
+        
+        .lock-gears {
+            position: relative;
+            width: 100%;
+            padding-top: 100%;
+        }
+        
+        .lock-gear {
+            position: absolute;
+            width: 33.333%;
+            animation-play-state: paused;
+        }
+        
+        .lock-display {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .lock-display h3 {
+            color: #FFF;
+            font-size: 5vw;
+            font-weight: 400;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .lock-answer {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .answer-input {
+            width: 70%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 4.5vw;
+        }
+        
+        .answer-btn {
+            width: 25%;
+            padding: 12px 5px;
+            background: linear-gradient(135deg, #FF9BFF, #6EB5FF);
+            border: none;
+            border-radius: 10px;
+            color: #FFF;
+            font-size: 4.5vw;
+        }
+        
+        .lock-result {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .lock-result p {
+            color: #FFF;
+            font-size: 4.5vw;
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+        
+        /* 时光胶囊模块 */
+        #time-capsule {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            z-index: 5;
+        }
+        
+        .capsule-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin-top: 10vh;
+        }
+        
+        .capsule-image {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50%;
+            z-index: 3;
+        }
+        
+        .capsule-date {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60%;
+            text-align: center;
+            color: #fff;
+            font-size: 4vw;
+            z-index: 4;
+        }
+        
+        .capsule-countdown {
+            position: relative;
+            margin-top: 60%;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .capsule-countdown h3 {
+            color: #FFF;
+            font-size: 5vw;
+            font-weight: 400;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .countdown-display {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        
+        .countdown-unit {
+            text-align: center;
+        }
+        
+        .countdown-value {
+            font-size: 8vw;
+            color: #FF9BFF;
+            font-weight: 500;
+        }
+        
+        .countdown-label {
+            font-size: 3vw;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+        
+        /* 动画效果 */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .float {
+            animation: float 3s infinite ease-in-out;
+        }
+        
+        /* 响应式调整 */
+        @media (min-width: 768px) {
+            .nav-btn { width: 60px; height: 60px; font-size: 24px; }
+            .lock-display h3, .capsule-countdown h3 { font-size: 20px; }
+            .answer-input, .answer-btn { font-size: 16px; padding: 10px 15px; }
+            .lock-result p { font-size: 18px; }
+            .countdown-value { font-size: 40px; }
+            .countdown-label { font-size: 14px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- 加载界面 -->
+    <div id="loader">
+        <div class="loading-heart pulse">❤️</div>
+        <div class="loading-text">心跳连接中...</div>
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+    </div>
+    
+    <!-- 主应用容器 -->
+    <div id="app">
+        <!-- 粒子背景 -->
+        <div class="particles"></div>
+        
+        <!-- 心动时刻 -->
+        <section id="heart-sync">
+            <h1 style="color: #FFF; font-weight: 300; font-size: 7vw;">❤️ 心跳同步</h1>
+            <p style="color: rgba(255, 255, 255, 0.7); margin-top: 10px; font-size: 4vw; text-align: center;">
+                轻触屏幕，让爱人的心跳与你共鸣
+            </p>
+            
+            <div class="sync-pulse-container">
+                <canvas id="heart-canvas"></canvas>
+                <div class="heart-center pulse">❤️</div>
+            </div>
+            
+            <div style="color: rgba(255, 255, 255, 0.5); margin-top: 20px; text-align: center; font-size: 4vw;">
+                双方同步率: <span id="sync-percent">0%</span>
+            </div>
+        </section>
+        
+        <!-- 记忆密码锁 -->
+        <section id="memory-lock">
+            <div class="lock-container">
+                <div class="lock-gears">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='45' fill='none' stroke='%23FF9BFF' stroke-width='3' stroke-dasharray='10,5'/%3E%3C/svg%3E" 
+                         alt="齿轮1" class="lock-gear" style="top:10%; left:10%; width:35%;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='40' fill='none' stroke='%236EB5FF' stroke-width='3' stroke-dasharray='12,6'/%3E%3C/svg%3E" 
+                         alt="齿轮2" class="lock-gear" style="top:50%; left:60%; width:30%;">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='35' fill='none' stroke='%23FF3B6D' stroke-width='3' stroke-dasharray='15,8'/%3E%3C/svg%3E" 
+                         alt="齿轮3" class="lock-gear" style="bottom:10%; left:25%; width:25%;">
+                </div>
+                <div class="lock-display">
+                    <h3>我们的第一个旅行目的地是？</h3>
+                    <div class="lock-answer">
+                        <input type="text" class="answer-input" placeholder="输入答案...">
+                        <button class="answer-btn">解锁</button>
+                    </div>
+                    <div class="lock-result">
+                        <p>❤️ 答案正确！这是属于我们的记忆 ❤️</p>
+                        <p>还记得我们在海边的那一夜吗？繁星满天，你的眼睛比星星还明亮...</p>
+                        <p>这张照片一直珍藏在我心底</p>
+                        <div style="margin: 15px 0; height: 150px; background: rgba(255,255,255,0.1); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: rgba(255,255,255,0.3);">
+                            [珍贵照片]
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 时光胶囊 -->
+        <section id="time-capsule">
+            <div class="capsule-container">
+                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 300'%3E%3Cellipse cx='100' cy='75' rx='70' ry='40' fill='%23fff' opacity='0.1'/%3E%3Cellipse cx='100' cy='80' rx='60' ry='35' fill='%23fff' opacity='0.1'/%3E%3Crect x='40' y='100' width='120' height='180' rx='10' fill='%23fff' opacity='0.1'/%3E%3Cellipse cx='100' cy='100' rx='60' ry='10' fill='%23FF3B6D' opacity='0.3'/%3E%3Cellipse cx='100' cy='280' rx='60' ry='10' fill='%23FF3B6D' opacity='0.3'/%3E%3C/svg%3E" 
+                     alt="时光胶囊" class="capsule-image float">
+                <div class="capsule-date">解封日: 2025-02-14</div>
+                <div class="capsule-countdown">
+                    <h3>时光胶囊倒计时</h3>
+                    <div class="countdown-display">
+                        <div class="countdown-unit">
+                            <div class="countdown-value" id="days">365</div>
+                            <div class="countdown-label">天</div>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="countdown-value" id="hours">23</div>
+                            <div class="countdown-label">时</div>
+                        </div>
+                        <div class="countdown-unit">
+                            <div class="countdown-value" id="minutes">59</div>
+                            <div class="countdown-label">分</div>
+                        </div>
+                    </div>
+                    <p style="color: rgba(255, 255, 255, 0.7); text-align: center; font-size: 4vw; margin: 15px 0;">
+                        需要双方共同按下按钮才能解封胶囊
+                    </p>
+                    <div style="display: flex; justify-content: center;">
+                        <button class="answer-btn" style="width:60%;" id="capsule-btn">准备解封</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- 导航栏 -->
+        <div class="nav-bar">
+            <div class="nav-btn active" data-target="heart-sync">❤️</div>
+            <div class="nav-btn" data-target="memory-lock">🔒</div>
+            <div class="nav-btn" data-target="time-capsule">⏳</div>
+        </div>
+    </div>
+
+    <script>
+        // 加载进度模拟
+        let progress = 0;
+        const loader = document.getElementById('loader');
+        const progressBar = document.getElementById('progress');
+        const app = document.getElementById('app');
+        
+        const loaderInterval = setInterval(() => {
+            progress += Math.random() * 15;
+            if(progress > 100) progress = 100;
+            progressBar.style.width = progress + '%';
+            
+            if(progress >= 100) {
+                clearInterval(loaderInterval);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        app.style.display = 'block';
+                        initApp();
+                    }, 500);
+                }, 300);
+            }
+        }, 200);
+        
+        // 主应用初始化
+        function initApp() {
+            // 创建粒子背景
+            createParticles();
+            
+            // 初始化心跳动画
+            initHeartSync();
+            
+            // 设置导航功能
+            setupNavigation();
+            
+            // 设置记忆密码锁功能
+            setupMemoryLock();
+            
+            // 设置时光胶囊功能
+            setupTimeCapsule();
+            
+            // 为整个应用添加点击效果
+            document.addEventListener('touchstart', createHeartEffect);
+        }
+        
+        // 创建粒子背景
+        function createParticles() {
+            const container = document.querySelector('.particles');
+            const colors = ['#FF3B6D', '#FF9BFF', '#6EB5FF'];
+            
+            for(let i = 0; i < 35; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // 随机粒子属性
+                const size = Math.random() * 10 + 3;
+                const duration = Math.random() * 10 + 5;
+                const delay = Math.random() * 5;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                const left = Math.random() * 100;
+                const top = Math.random() * 100;
+                
+                particle.style.cssText = `
+                    width: ${size}px;
+                    height: ${size}px;
+                    background-color: ${color};
+                    opacity: ${Math.random() * 0.5 + 0.2};
+                    left: ${left}%;
+                    top: ${top}%;
+                    border-radius: 50%;
+                    position: absolute;
+                    animation: float ${duration}s ${delay}s infinite ease-in-out;
+                `;
+                
+                // 为每个粒子创建独特漂浮动画
+                const keyframes = `
+                    @keyframes float {
+                        0% {
+                            transform: translate(0, 0);
+                        }
+                        100% {
+                            transform: translate(${Math.random() * 100 - 50}px, ${Math.random() * 100 - 50}px);
+                        }
+                    }
+                `;
+                
+                const style = document.createElement('style');
+                style.textContent = keyframes;
+                document.head.appendChild(style);
+                
+                container.appendChild(particle);
+            }
+        }
+        
+        // 初始化心跳同步功能
+        function initHeartSync() {
+            const canvas = document.getElementById('heart-canvas');
+            const ctx = canvas.getContext('2d');
+            const centerX = canvas.width / 2;
+            const centerY = canvas.height / 2;
+            let pulseRadius = 0;
+            let maxPulseRadius = canvas.width * 0.45;
+            let pulseWidth = 0;
+            let animationId = null;
+            let lastTouchTime = 0;
+            let syncCounter = 0;
+            
+            // 设置Canvas大小
+            function setCanvasSize() {
+                canvas.width = canvas.clientWidth;
+                canvas.height = canvas.clientHeight;
+                maxPulseRadius = canvas.width * 0.45;
+                drawHeartBeat();
+            }
+            
+            // 设置初始Canvas大小
+            setCanvasSize();
+            window.addEventListener('resize', setCanvasSize);
+            
+            // 绘制心跳
+            function drawHeartBeat() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // 绘制背景光晕
+                const gradient = ctx.createRadialGradient(
+                    centerX, centerY, 0,
+                    centerX, centerY, maxPulseRadius * 1.2
+                );
+                gradient.addColorStop(0, 'rgba(255, 59, 109, 0.5)');
+                gradient.addColorStop(1, 'rgba(255, 59, 109, 0)');
+                
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+                ctx.fillStyle = gradient;
+                ctx.fill();
+                
+                // 绘制脉冲波
+                if (pulseRadius > 0) {
+                    ctx.beginPath();
+                    ctx.arc(centerX, centerY, pulseRadius, 0, Math.PI * 2);
+                    ctx.strokeStyle = '#FF3B6D';
+                    ctx.lineWidth = pulseWidth;
+                    ctx.stroke();
+                }
+                
+                // 计算同步率 (模拟)
+                const now = Date.now();
+                if (syncCounter < 100) {
+                    document.getElementById('sync-percent').textContent = 
+                        syncCounter + '%';
+                    syncCounter++;
+                }
+            }
+            
+            // 心跳动画
+            function animatePulse() {
+                if (pulseRadius > maxPulseRadius) {
+                    pulseRadius = 0;
+                    pulseWidth = 0;
+                } else {
+                    pulseRadius += 2;
+                    pulseWidth = Math.sin(pulseRadius / maxPulseRadius * Math.PI) * 15;
+                }
+                
+                drawHeartBeat();
+                animationId = requestAnimationFrame(animatePulse);
+            }
+            
+            // 开始动画
+            animatePulse();
+            
+            // 触摸事件
+            canvas.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                pulseRadius = 0;
+                lastTouchTime = Date.now();
+                
+                // 在触摸点添加粒子效果
+                const rect = canvas.getBoundingClientRect();
+                const touch = e.touches[0];
+                const touchX = touch.clientX - rect.left;
+                const touchY = touch.clientY - rect.top;
+                createTouchPulse(touchX, touchY);
+            });
+            
+            // 添加触摸点粒子效果
+            function createTouchPulse(x, y) {
+                const particles = document.querySelector('.particles');
+                for(let i = 0; i < 8; i++) {
+                    const particle = document.createElement('div');
+                    particle.className = 'particle';
+                    particle.style.cssText = `
+                        width: ${Math.random() * 8 + 4}px;
+                        height: ${Math.random() * 8 + 4}px;
+                        background-color: #FF9BFF;
+                        position: absolute;
+                        left: ${x}px;
+                        top: ${y}px;
+                        border-radius: 50%;
+                        transform: translate(${(Math.random()-0.5)*100}px, ${(Math.random()-0.5)*100}px);
+                        opacity: 0;
+                    `;
+                    
+                    const animation = particle.animate([
+                        { transform: `translate(${(Math.random()-0.5)*20}px, ${(Math.random()-0.5)*20}px) scale(0.2)`, opacity: 0 },
+                        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+                        { transform: `translate(${(Math.random()-0.5)*100}px, ${(Math.random()-0.5)*100}px) scale(0.1)`, opacity: 0 }
+                    ], {
+                        duration: 1000 + Math.random() * 500,
+                        easing: 'ease-out'
+                    });
+                    
+                    particles.appendChild(particle);
+                    
+                    animation.onfinish = () => particle.remove();
+                }
+            }
+        }
+        
+        // 设置导航
+        function setupNavigation() {
+            const navButtons = document.querySelectorAll('.nav-btn');
+            const sections = {
+                'heart-sync': document.getElementById('heart-sync'),
+                'memory-lock': document.getElementById('memory-lock'),
+                'time-capsule': document.getElementById('time-capsule')
+            };
+            
+            navButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const target = this.dataset.target;
+                    
+                    // 更新按钮状态
+                    navButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 显示目标部分
+                    Object.values(sections).forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // 添加动画效果
+                    sections[target].style.display = 'flex';
+                    sections[target].style.animation = 'none';
+                    setTimeout(() => {
+                        sections[target].style.animation = 'fadeIn 0.5s forwards';
+                    }, 10);
+                });
+            });
+        }
+        
+        // 设置记忆密码锁功能
+        function setupMemoryLock() {
+            const answerBtn = document.querySelector('.answer-btn');
+            const answerInput = document.querySelector('.answer-input');
+            const lockResult = document.querySelector('.lock-result');
+            const lockGears = document.querySelectorAll('.lock-gear');
+            
+            answerBtn.addEventListener('click', function() {
+                const answer = answerInput.value.trim();
+                
+                // 如果答案正确（这里只是模拟）
+                if (answer.toLowerCase() === "三亚" || answer.toLowerCase() === "sanya") {
+                    // 播放成功动画
+                    lockGears.forEach((gear, index) => {
+                        gear.style.animation = `rotate ${3 + index}s linear`;
+                        gear.style.animationPlayState = 'running';
+                    });
+                    
+                    // 显示结果
+                    setTimeout(() => {
+                        lockResult.style.display = 'block';
+                        
+                        // 添加粒子爆炸效果
+                        createStars(document.querySelector('.lock-display'));
+                    }, 1500);
+                } else {
+                    // 错误反馈
+                    document.body.animate([
+                        { transform: 'translateX(0)' },
+                        { transform: 'translateX(-10px)' },
+                        { transform: 'translateX(10px)' },
+                        { transform: 'translateX(-10px)' },
+                        { transform: 'translateX(0)' }
+                    ], {
+                        duration: 500,
+                        iterations: 1
+                    });
+                    
+                    answerInput.value = '';
+                    answerInput.placeholder = '答案不对哦，再想想...';
+                }
+            });
+        }
+        
+        // 星星爆炸效果（用于正确解锁时）
+        function createStars(container) {
+            for (let i = 0; i < 30; i++) {
+                const star = document.createElement('div');
+                star.innerHTML = '✨';
+                star.style.position = 'absolute';
+                star.style.fontSize = `${Math.random() * 2 + 1}rem`;
+                star.style.opacity = '1';
+                star.style.zIndex = '10';
+                
+                const containerRect = container.getBoundingClientRect();
+                star.style.left = `${Math.random() * 100}%`;
+                star.style.top = `${Math.random() * 100}%`;
+                
+                container.appendChild(star);
+                
+                // 动画效果
+                const anim = star.animate([
+                    { transform: 'scale(0.8)', opacity: 1 },
+                    { transform: 'scale(1.5)', opacity: 0 }
+                ], {
+                    duration: 1000 + Math.random() * 500,
+                    easing: 'ease-out',
+                    delay: Math.random() * 300
+                });
+                
+                anim.onfinish = () => star.remove();
+            }
+        }
+        
+        // 设置时光胶囊功能
+        function setupTimeCapsule() {
+            const capsuleBtn = document.getElementById('capsule-btn');
+            
+            // 设置初始倒计时值
+            setCountdown();
+            
+            capsuleBtn.addEventListener('click', function() {
+                if(capsuleBtn.textContent === '准备解封') {
+                    capsuleBtn.textContent = '等待伴侣';
+                    capsuleBtn.disabled = true;
+                    
+                    // 模拟等待伴侣
+                    setTimeout(() => {
+                        // 这里应该等待另一个用户的响应，但模拟直接成功
+                        capsuleBtn.textContent = '共同开启';
+                        capsuleBtn.disabled = false;
+                        capsuleBtn.style.background = 'linear-gradient(135deg, #FF3B6D, #FF9BFF)';
+                        
+                        // 添加花瓣飘落效果
+                        createFlowerEffect();
+                    }, 3000);
+                } else {
+                    capsuleBtn.textContent = '开启中...';
+                    setTimeout(() => {
+                        // 成功开启时光胶囊
+                        createFlowerEffect(true);
+                        capsuleBtn.textContent = '时光胶囊已开启';
+                        capsuleBtn.disabled = true;
+                        
+                        setTimeout(() => {
+                            // 显示内容
+                            document.querySelector('.lock-result').style.display = 'none';
+                        }, 2000);
+                    }, 1000);
+                }
+            });
+        }
+        
+        // 设置倒计时
+        function setCountdown() {
+            // 设置未来的一个日期（例如6个月后）
+            const targetDate = new Date();
+            targetDate.setMonth(targetDate.getMonth() + 6);
+            
+            function updateCountdown() {
+                const now = new Date();
+                const diff = targetDate - now;
+                
+                if (diff <= 0) {
+                    document.getElementById('days').textContent = '0';
+                    document.getElementById('hours').textContent = '0';
+                    document.getElementById('minutes').textContent = '0';
+                    document.getElementById('capsule-btn').textContent = '开启时光胶囊';
+                    return;
+                }
+                
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                
+                document.getElementById('days').textContent = days;
+                document.getElementById('hours').textContent = hours;
+                document.getElementById('minutes').textContent = minutes;
+                
+                requestAnimationFrame(updateCountdown);
+            }
+            
+            updateCountdown();
+        }
+        
+        // 花瓣飘落效果
+        function createFlowerEffect(full = false) {
+            const particles = document.querySelector('.particles');
+            const flowerCount = full ? 80 : 30;
+            
+            for(let i = 0; i < flowerCount; i++) {
+                const flower = document.createElement('div');
+                flower.innerHTML = full ? '🌸' : '🌷';
+                flower.style.position = 'absolute';
+                flower.style.fontSize = `${Math.random() * 4 + 2}rem`;
+                flower.style.opacity = '0.8';
+                flower.style.left = `${Math.random() * 100}%`;
+                flower.style.top = full ? '-10%' : `${Math.random() * 100}%`;
+                flower.style.zIndex = '10';
+                
+                particles.appendChild(flower);
+                
+                // 花瓣飘落动画
+                const anim = flower.animate([
+                    { 
+                        transform: `translate(0, 0) rotate(0deg)`,
+                        opacity: 1 
+                    },
+                    { 
+                        transform: `translate(${Math.random() * 100 - 50}px, ${window.innerHeight}px) rotate(${Math.random() * 360}deg)`,
+                        opacity: 0 
+                    }
+                ], {
+                    duration: 4000 + Math.random() * 3000,
+                    easing: 'ease-in'
+                });
+                
+                anim.onfinish = () => flower.remove();
+            }
+        }
+        
+        // 创建爱心效果（点击整个应用区域）
+        function createHeartEffect(e) {
+            const heartsContainer = document.querySelector('.particles');
+            const heart = document.createElement('div');
+            
+            // 如果是记忆密码锁或时光胶囊，只在特定区域生效
+            const currentSection = document.querySelector('.nav-btn.active').dataset.target;
+            if (currentSection !== 'heart-sync') {
+                return;
+            }
+            
+            const x = e.touches ? e.touches[0].clientX : e.clientX;
+            const y = e.touches ? e.touches[0].clientY : e.clientY;
+            
+            heart.innerHTML = '❤️';
+            heart.style.position = 'absolute';
+            heart.style.left = `${x}px`;
+            heart.style.top = `${y}px`;
+            heart.style.fontSize = '2rem';
+            heart.style.opacity = '1';
+            heart.style.zIndex = '10';
+            heart.style.transform = 'scale(0)';
+            heart.style.transition = 'none';
+            
+            heartsContainer.appendChild(heart);
+            
+            // 快速放大效果
+            setTimeout(() => {
+                heart.style.transition = 'all 0.5s ease-out';
+                heart.style.transform = 'scale(2)';
+                heart.style.opacity = '0.5';
+            }, 10);
+            
+            // 向上漂浮并消失
+            setTimeout(() => {
+                heart.style.transform = 'translateY(-50px) scale(1.5)';
+                heart.style.opacity = '0';
+            }, 100);
+            
+            // 移除元素
+            setTimeout(() => {
+                heart.remove();
+            }, 600);
+        }
+    </script>
+</body>
+</html>
